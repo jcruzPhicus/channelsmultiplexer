@@ -3,6 +3,7 @@ from functools import partial
 from asgiref.compatibility import guarantee_single_callable
 from channels.consumer import get_handler_name
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from channelsmultiplexer.conf import settings
 
 import asyncio
 
@@ -37,7 +38,8 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
         # create the child applications
         await loop.create_task(self._create_upstream_applications())
         # start observing for messages
-        message_consumer = loop.create_task(super().__call__(scope, receive, send))
+        message_consumer = loop.create_task(
+            super().__call__(scope, receive, send))
         try:
             # wait for either an upstream application to close or the message consumer loop.
             await asyncio.wait(
@@ -92,7 +94,8 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
             return
         steam_queue = self.application_streams.get(stream_name)
         if steam_queue is None:
-            raise ValueError("Invalid multiplexed frame received (stream not mapped)")
+            raise ValueError(
+                "Invalid multiplexed frame received (stream not mapped)")
         await steam_queue.put(message)
 
     async def dispatch_downstream(self, message, steam_name):
@@ -121,13 +124,14 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
         Rout the message down the correct stream.
         """
         # Check the frame looks good
-        if isinstance(content, dict) and "stream" in content and "payload" in content:
+        if isinstance(content, dict) and settings.MULTIPLEXER_STREAM_KEY in content and settings.MULTIPLEXER_PAYLOAD_KEY in content:
             # Match it to a channel
-            steam_name = content["stream"]
-            payload = content["payload"]
+            steam_name = content[settings.MULTIPLEXER_STREAM_KEY]
+            payload = content[settings.MULTIPLEXER_PAYLOAD_KEY]
             # block upstream frames
             if steam_name not in self.applications_accepting_frames:
-                raise ValueError("Invalid multiplexed frame received (stream not mapped)")
+                raise ValueError(
+                    "Invalid multiplexed frame received (stream not mapped)")
             # send it on to the application that handles this stream
             await self.send_upstream(
                 message={
@@ -138,7 +142,8 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
             )
             return
         else:
-            raise ValueError("Invalid multiplexed **frame received (no channel/payload key)")
+            raise ValueError(
+                "Invalid multiplexed **frame received (no channel/payload key)")
 
     async def websocket_disconnect(self, message):
         """
@@ -175,10 +180,13 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
         text = message.get("text")
         # todo what to do on binary!
         json = await self.decode_json(text)
-        data = {
-            "stream": stream_name,
-            "payload": json
-        }
+        if settings.MULTIPLEXER_MANAGE_ENVELOPE_USER_SIDE:
+            data = {
+                settings.MULTIPLEXER_STREAM_KEY: stream_name,
+                settings.MULTIPLEXER_PAYLOAD_KEY: json
+            }
+        else:
+            data = json
         await self.send_json(data)
 
     async def websocket_accept(self, message, stream_name):

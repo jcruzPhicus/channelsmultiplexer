@@ -14,6 +14,7 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         'channels>=3.0',
+        'django-appconf==1.0.6'
     ],
     extras_require={
         'tests': [
