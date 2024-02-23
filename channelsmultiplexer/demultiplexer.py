@@ -94,8 +94,14 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
             return
         steam_queue = self.application_streams.get(stream_name)
         if steam_queue is None:
-            raise ValueError(
-                "Invalid multiplexed frame received (stream not mapped)")
+            if settings.MULTIPLEXER_RAISE_EXCEPTIONS:
+                raise ValueError(
+                    "Invalid multiplexed frame received (stream not mapped)")
+            else:
+                message = {"stream": "multiplexer", "payload": {
+                    "type": "error", "message": "Invalid multiplexed frame received (stream not mapped)"}}
+                await self.send_json(message)
+                return
         await steam_queue.put(message)
 
     async def dispatch_downstream(self, message, steam_name):
@@ -130,8 +136,14 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
             payload = content[settings.MULTIPLEXER_PAYLOAD_KEY]
             # block upstream frames
             if steam_name not in self.applications_accepting_frames:
-                raise ValueError(
-                    "Invalid multiplexed frame received (stream not mapped)")
+                if settings.MULTIPLEXER_RAISE_EXCEPTIONS:
+                    raise ValueError(
+                        "Invalid multiplexed frame received (stream not mapped)")
+                else:
+                    message = {"stream": "multiplexer", "payload": {
+                        "type": "error", "message": "Invalid multiplexed frame received (stream not mapped)"}}
+                    await self.send_json(message)
+                    return
             # send it on to the application that handles this stream
             await self.send_upstream(
                 message={
@@ -142,8 +154,14 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
             )
             return
         else:
-            raise ValueError(
-                "Invalid multiplexed **frame received (no channel/payload key)")
+            if settings.MULTIPLEXER_RAISE_EXCEPTIONS:
+                raise ValueError(
+                    "Invalid multiplexed **frame received (no channel/payload key)")
+            else:
+                message = {"stream": "multiplexer", "payload": {
+                    "type": "error", "message": "Invalid multiplexed **frame received (no channel/payload key)"}}
+                await self.send_json(message)
+                return
 
     async def websocket_disconnect(self, message):
         """
