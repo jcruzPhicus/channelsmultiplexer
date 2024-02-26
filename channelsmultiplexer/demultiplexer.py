@@ -98,7 +98,7 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
                 raise ValueError(
                     "Invalid multiplexed frame received (stream not mapped)")
             else:
-                message = {settings.MULTIPLEXER_STREAM_KEY: "multiplexer", settings.MULTIPLEXER_PAYLOAD_KEY: {
+                message = {settings.MULTIPLEXER_STREAM_KEY: stream_name, settings.MULTIPLEXER_PAYLOAD_KEY: {
                     "type": "error", "message": "Invalid multiplexed frame received (stream not mapped)"}}
                 await self.send_json(message)
                 return
@@ -140,7 +140,7 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
                     raise ValueError(
                         "Invalid multiplexed frame received (stream not mapped)")
                 else:
-                    message = {settings.MULTIPLEXER_STREAM_KEY: "multiplexer", settings.MULTIPLEXER_PAYLOAD_KEY: {
+                    message = {settings.MULTIPLEXER_STREAM_KEY: steam_name, settings.MULTIPLEXER_PAYLOAD_KEY: {
                         "type": "error", "message": "Invalid multiplexed frame received (stream not mapped)"}}
                     await self.send_json(message)
                     return
@@ -158,7 +158,9 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
                 raise ValueError(
                     "Invalid multiplexed **frame received (no channel/payload key)")
             else:
-                message = {settings.MULTIPLEXER_STREAM_KEY: "multiplexer", settings.MULTIPLEXER_PAYLOAD_KEY: {
+                steam_name = content.get(settings.MULTIPLEXER_STREAM_KEY, "multiplexer") if isinstance(
+                    content, dict) else "multiplexer"
+                message = {settings.MULTIPLEXER_STREAM_KEY: steam_name, settings.MULTIPLEXER_PAYLOAD_KEY: {
                     "type": "error", "message": "Invalid multiplexed **frame received (no channel/payload key)"}}
                 await self.send_json(message)
                 return
