@@ -44,7 +44,7 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
             # wait for either an upstream application to close or the message consumer loop.
             await asyncio.wait(
                 list(self.application_futures.values()) + [message_consumer],
-                return_when=asyncio.FIRST_COMPLETED
+                return_when=asyncio.ALL_COMPLETED
             )
         finally:
             # make sure we clean up the message consumer loop
