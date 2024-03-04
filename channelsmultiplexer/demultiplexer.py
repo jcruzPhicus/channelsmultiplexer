@@ -45,7 +45,7 @@ class AsyncJsonWebsocketDemultiplexer(AsyncJsonWebsocketConsumer):
             await asyncio.wait(
                 list(self.application_futures.values()) + [message_consumer],
                 return_when=asyncio.ALL_COMPLETED
-            )
+            )  # https://github.com/hishnash/channelsmultiplexer/issues/3#issuecomment-619618605
         finally:
             # make sure we clean up the message consumer loop
             message_consumer.cancel()
